@@ -143,11 +143,13 @@ public class Planner : MonoBehaviour
         Stack<Motion> reversedMotion = new Stack<Motion>();
         while (track != null)
         {
+            if(__DEBUG__) Debug.Log("[" + (reversedMotion.Count + 1) + "] " + track);
             collisionInterval[(int)track.position.x, (int)track.position.z].Add(track.interval);
             reversedMotion.Push(track.motion);
             track = track.previousState;
         }
         while (reversedMotion.Count > 0) robot.motionToPath.Enqueue(reversedMotion.Pop());
+        if(__DEBUG__) Debug.Log("Total Length: " + robot.motionToPath.Count);
         planQueue.Dequeue();
 
         if (__DEBUG__) Debug.Log("Done");

@@ -30,8 +30,11 @@ public class Robot : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (motionToPath.Count == 0) return;
-        if (motion.time <= 0f) motion = motionToPath.Dequeue();
+        if (motion.time <= 0f)
+        {
+            if (motionToPath.Count == 0) return;
+            motion = motionToPath.Dequeue();
+        }
         Vector3 velocity = motion.deltaPosition * speed;
         transform.position += velocity * Time.deltaTime;
         motion.time -= Time.deltaTime;
