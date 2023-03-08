@@ -15,6 +15,7 @@ public class Robot : MonoBehaviour
     public Vector3 destination;
     public Queue<Motion> motionToPath = new Queue<Motion>();
     public float speed = 0.5f;
+    // For route priority
     public float requestTime;
     private Motion motion = Motion.none;
 
