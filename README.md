@@ -48,7 +48,7 @@
 
 ### 5. 기타
 
-추가적인 내용은 자유롭게 작성하세요.
+[회의록](https://docs.google.com/document/d/1Jag0lyQDvFNUKjmpU1_TOHbEmVOhvqhIF1oz9uKTGSA/edit?usp=sharing)
 
 
 ## Markdown을 사용하여 내용꾸미기
