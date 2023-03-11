@@ -250,10 +250,10 @@ public class Environment
         if (isValidState(turnLeftActionState)) neighbors.Add(turnLeftActionState);
 
         Vector2 goLocation = agentState.location;
-        if (agentState.direction == 0) goLocation.x += 1;
-        else if (agentState.direction == 1) goLocation.y += 1;
-        else if (agentState.direction == 2) goLocation.x -= 1;
-        else if (agentState.direction == 3) goLocation.y -= 1;
+        if (agentState.direction == 0) goLocation.y += 1;
+        else if (agentState.direction == 1) goLocation.x += 1;
+        else if (agentState.direction == 2) goLocation.y -= 1;
+        else if (agentState.direction == 3) goLocation.x -= 1;
         AgentState goActionState = new AgentState(agentState.time + 1, agentState.agentIndex, goLocation, agentState.direction);
         if (isValidState(goActionState) && isValidTransition(agentState, goActionState)) neighbors.Add(goActionState);
 
@@ -267,7 +267,7 @@ public class Environment
 
         foreach(VertexConstraint vertexConstraint in constraints[agentState.agentIndex].vertexConstraints)
         {
-            if (vertexConstraint == new VertexConstraint(agentState.time, agentState.location))
+            if (vertexConstraint.Equals(new VertexConstraint(agentState.time, agentState.location)))
             {
                 return false;
             }
@@ -288,7 +288,7 @@ public class Environment
     {
         foreach (EdgeConstraint edgeConstraint in constraints[agentState1.agentIndex].edgeConstraints)
         {
-            if (edgeConstraint == new EdgeConstraint(agentState1.time, agentState1.location, agentState2.location))
+            if (edgeConstraint.Equals(new EdgeConstraint(agentState1.time, agentState1.location, agentState2.location)))
             {
                 return false;
             }
@@ -317,6 +317,22 @@ public class HighLevelNode
         cost = 0;
     }
 
+    public HighLevelNode(HighLevelNode highLevelNode)
+    {
+        environment = new Environment(highLevelNode.environment);
+
+        solution = new List<AgentState>[environment.numberOfAgents];
+        for (int i = 0; i < environment.numberOfAgents; i++)
+        {
+            solution[i] = new List<AgentState>();
+            for (int j = 0; j < highLevelNode.solution[i].Count; j++)
+            {
+                solution[i].Add(new AgentState(highLevelNode.solution[i][j]));
+            }
+        }
+        cost = highLevelNode.cost;
+    }
+
     public Conflict getFirstConflict()
     {
         int maxTime = 0;
@@ -331,6 +347,7 @@ public class HighLevelNode
             {
                 for (int agent2 = agent1 + 1; agent2 < environment.numberOfAgents; agent2++)
                 {
+                    if (solution[agent1].Count == 0 || solution[agent2].Count == 0) continue;
                     AgentState nowAgent1State = solution[agent1][Mathf.Min(solution[agent1].Count - 1, t)];
                     AgentState nowAgent2State = solution[agent2][Mathf.Min(solution[agent2].Count - 1, t)];
                     if (nowAgent1State.location == nowAgent2State.location)
@@ -344,6 +361,7 @@ public class HighLevelNode
             {
                 for (int agent2 = agent1 + 1; agent2 < environment.numberOfAgents; agent2++)
                 {
+                    if (solution[agent1].Count == 0 || solution[agent2].Count == 0) continue;
                     AgentState agent1StateA = solution[agent1][Mathf.Min(solution[agent1].Count - 1, t)];
                     AgentState agent1StateB = solution[agent1][Mathf.Min(solution[agent1].Count - 1, t + 1)];
                     AgentState agent2StateA = solution[agent2][Mathf.Min(solution[agent2].Count - 1, t)];
@@ -378,6 +396,14 @@ public class HighLevelNode
         cost -= solution[agent].Count;
         solution[agent].Clear();
 
+        foreach (VertexConstraint vertexConstraint in environment.constraints[agent].vertexConstraints)
+        {
+            if (vertexConstraint == new VertexConstraint(0, environment.starts[agent]))
+            {
+                return false;
+            }
+        }
+
         List<AgentState> openSet = new List<AgentState>();
         List<AgentState> closeSet = new List<AgentState>();
         List<AgentState[]> cameFrom = new List<AgentState[]>();
@@ -386,13 +412,11 @@ public class HighLevelNode
 
         openSet.Add(startState);
 
-        float[] timeCost = new float[environment.numberOfAgents];
-        for (int i = 0; i < environment.numberOfAgents; i++) timeCost[i] = float.PositiveInfinity;
-        timeCost[agent] = 0;
+        List<float> timeCost = new List<float>();
+        timeCost.Add(0);
 
-        float[] heuristicCost = new float[environment.numberOfAgents];
-        for (int i = 0; i < environment.numberOfAgents; i++) heuristicCost[i] = float.PositiveInfinity;
-        heuristicCost[agent] = getHeuristicCost(environment.starts[agent], environment.goals[agent]);
+        List<float> heuristicCost = new List<float>();
+        heuristicCost.Add(getHeuristicCost(environment.starts[agent], environment.goals[agent]));
 
         while (openSet.Count != 0)
         {
@@ -400,21 +424,27 @@ public class HighLevelNode
             int minStateIndex = -1;
             for (int i = 0; i < openSet.Count; i++)
             {
-                if (minCost > heuristicCost[openSet[i].agentIndex])
+                if (minCost > heuristicCost[i])
                 {
-                    minCost = heuristicCost[openSet[i].agentIndex];
+                    minCost = heuristicCost[i];
                     minStateIndex = i;
                 }
             }
 
             AgentState currentState = openSet[minStateIndex];
 
+            //Debug.Log("----currentstate---");
+            //Debug.Log(currentState.time);
+            //Debug.Log(currentState.location);
+            //Debug.Log(currentState.direction);
+            //Debug.Log("-------");
+
             closeSet.Add(new AgentState(currentState));
 
             if (currentState.location == environment.goals[agent])
             {
                 int now = -1;
-                for (int i = cameFrom.Count - 1; i >= 0; i++)
+                for (int i = cameFrom.Count - 1; i >= 0; i--)
                 {
                     if (cameFrom[i][0].location == environment.goals[agent])
                     {
@@ -427,8 +457,12 @@ public class HighLevelNode
                 while (true)
                 {
                     solution[agent].Insert(0, new AgentState(cameFrom[now][0]));
-                    if (cameFrom[now][1].Equals(startState)) break;
-                    for (int i = cameFrom.Count - 1; i >= 0; i++)
+                    if (cameFrom[now][1].Equals(startState))
+                    {
+                        solution[agent].Insert(0, new AgentState(cameFrom[now][1]));
+                        break;
+                    }
+                    for (int i = cameFrom.Count - 1; i >= 0; i--)
                     {
                         if (cameFrom[i][0].Equals(cameFrom[now][1]))
                         {
@@ -444,6 +478,12 @@ public class HighLevelNode
             List<AgentState> neighbors = environment.getNeighbors(currentState);
             foreach (AgentState neighbor in neighbors)
             {
+                //Debug.Log("----neighbor---");
+                //Debug.Log(neighbor.time);
+                //Debug.Log(neighbor.location);
+                //Debug.Log(neighbor.direction);
+                //Debug.Log("-------");
+
                 bool isValidNeighbor = true;
                 foreach (AgentState agentState in closeSet)
                 {
@@ -455,25 +495,35 @@ public class HighLevelNode
                 }
                 if (!isValidNeighbor) continue;
 
-                isValidNeighbor = true;
-                foreach (AgentState agentState in openSet)
+                int neighborOpenSetIndex = -1;
+                for (int i = 0; i < openSet.Count; i++)
                 {
+                    AgentState agentState = openSet[i];
                     if (neighbor.Equals(agentState))
                     {
-                        isValidNeighbor = false;
+                        neighborOpenSetIndex = i;
                         break;
                     }
                 }
-                if (isValidNeighbor) openSet.Add(neighbor);
-                else if (timeCost[currentState.agentIndex] + 1 >= timeCost[neighbor.agentIndex]) continue;
+                if (neighborOpenSetIndex == -1)
+                {
+                    timeCost.Add(timeCost[minStateIndex] + 1);
+                    heuristicCost.Add(timeCost[minStateIndex] + getHeuristicCost(neighbor.location, environment.goals[neighbor.agentIndex]));
 
+                    openSet.Add(neighbor);
+                }
+                else if (timeCost[minStateIndex] + 1 >= timeCost[minStateIndex]) continue;
+                else
+                {
+                    timeCost[neighborOpenSetIndex] = timeCost[minStateIndex] + 1;
+                    heuristicCost[neighborOpenSetIndex] = timeCost[minStateIndex] + getHeuristicCost(neighbor.location, environment.goals[neighbor.agentIndex]);
+                }
                 cameFrom.Add(new AgentState[2] { neighbor, currentState });
-
-                timeCost[neighbor.agentIndex] = timeCost[currentState.agentIndex] + 1;
-                heuristicCost[neighbor.agentIndex] = timeCost[neighbor.agentIndex] + getHeuristicCost(neighbor.location, environment.goals[neighbor.agentIndex]);
             }
 
             openSet.RemoveAt(minStateIndex);
+            timeCost.RemoveAt(minStateIndex);
+            heuristicCost.RemoveAt(minStateIndex);
         }
 
         return false;
@@ -492,11 +542,38 @@ public class CBS : MonoBehaviour
     public Vector2[] goals;
 
     public GameObject floor;
+    public GameObject robotPrefab;
+    public GameObject obstaclePrefab;
+
+    public List<GameObject> robots;
+
+    public float simulationTime;
+    public bool done;
+    public bool autoSimulation;
+    public float simulationSpeed;
+    public List<AgentState>[] solution;
 
     // Start is called before the first frame update
     void Start()
     {
+        simulationTime = 0;
+        autoSimulation = false;
+        simulationSpeed = 1f;
+        done = false;
+
         floor.transform.localScale = new Vector3(dimension.x, 0.1f, dimension.y);
+        floor.transform.position = new Vector3(dimension.x / 2f - 0.5f, 0, dimension.y / 2f - 0.5f);
+
+        for (int i = 0; i < starts.Length; i++)
+        {
+            GameObject robot = Instantiate(robotPrefab, new Vector3(starts[i].x, 0.4f, starts[i].y), Quaternion.identity);
+            robots.Add(robot);
+        }
+
+        for (int i = 0; i < obstacles.Length; i++)
+        {
+            Instantiate(obstaclePrefab, new Vector3(obstacles[i].x, 0.5f, obstacles[i].y), Quaternion.identity);
+        }
 
         List<HighLevelNode> queue = new List<HighLevelNode>();
         HighLevelNode root = new HighLevelNode(new Environment(dimension, obstacles, starts, directions, goals));
@@ -507,8 +584,16 @@ public class CBS : MonoBehaviour
         }
         queue.Add(root);
 
+        int MAXXX = 1000;
+
         while (queue.Count != 0)
         {
+            MAXXX--;
+            if (MAXXX < 0)
+            {
+                Debug.Log("Time out");
+                break;
+            }
             int minCost = int.MaxValue;
             int minNodeIndex = -1;
             for (int i = 0; i < queue.Count; i++)
@@ -522,39 +607,62 @@ public class CBS : MonoBehaviour
 
             HighLevelNode nowNode = queue[minNodeIndex];
 
+            //Debug.Log("=======================");
+            //Debug.Log("Test " + minCost);
+            //for (int i = 0; i < nowNode.environment.numberOfAgents; i++)
+            //{
+            //    string str = i + ":: ";
+            //    foreach (AgentState agentState in nowNode.solution[i])
+            //    {
+            //        str += "[" + agentState.time + " " + agentState.location.x + "," + agentState.location.y + " " + agentState.direction;
+            //        str += "//";
+            //    }
+            //    Debug.Log(str);
+            //}
+
             Conflict firstConflict = nowNode.getFirstConflict();
+            //Debug.Log(firstConflict.type);
+            //Debug.Log(firstConflict.agent1);
+            //Debug.Log(firstConflict.agent2);
+            //Debug.Log(firstConflict.time);
+            //Debug.Log(firstConflict.vertexLocation);
             if (firstConflict.type == Conflict.CONFLICT_TYPE.NO_CONFLICT)
             {
                 Debug.Log("Found " + minCost);
+
+                solution = new List<AgentState>[nowNode.environment.numberOfAgents];
                 for (int i = 0; i < nowNode.environment.numberOfAgents; i++)
                 {
-                    string str = "";
+                    solution[i] = new List<AgentState>();
+                    string str = i + " :: ";
                     foreach(AgentState agentState in nowNode.solution[i])
                     {
-                        str += "[" + agentState.time + " " + agentState.location.x + "," + agentState.location.y + " " + agentState.direction;
-                        str += "//";
+                        solution[i].Add(new AgentState(agentState));
+                        str += agentState.time + " " + agentState.location.x + "," + agentState.location.y + " " + agentState.direction;
+                        str += " // ";
                     }
                     Debug.Log(str);
                 }
+                done = true;
                 break;
             }
             else if (firstConflict.type == Conflict.CONFLICT_TYPE.VERTEX)
             {
-                HighLevelNode agent1HighLevelNode = new HighLevelNode(nowNode.environment);
+                HighLevelNode agent1HighLevelNode = new HighLevelNode(nowNode);
                 agent1HighLevelNode.environment.constraints[firstConflict.agent1].vertexConstraints.Add(new VertexConstraint(firstConflict.time, firstConflict.vertexLocation));
                 if (agent1HighLevelNode.computeAgentSolution(firstConflict.agent1)) queue.Add(agent1HighLevelNode);
 
-                HighLevelNode agent2HighLevelNode = new HighLevelNode(nowNode.environment);
+                HighLevelNode agent2HighLevelNode = new HighLevelNode(nowNode);
                 agent2HighLevelNode.environment.constraints[firstConflict.agent2].vertexConstraints.Add(new VertexConstraint(firstConflict.time, firstConflict.vertexLocation));
                 if (agent2HighLevelNode.computeAgentSolution(firstConflict.agent2)) queue.Add(agent2HighLevelNode);
             }
             else if (firstConflict.type == Conflict.CONFLICT_TYPE.EDGE)
             {
-                HighLevelNode agent1HighLevelNode = new HighLevelNode(nowNode.environment);
+                HighLevelNode agent1HighLevelNode = new HighLevelNode(nowNode);
                 agent1HighLevelNode.environment.constraints[firstConflict.agent1].edgeConstraints.Add(new EdgeConstraint(firstConflict.time, firstConflict.edgeLocation1, firstConflict.edgeLocation2));
                 if (agent1HighLevelNode.computeAgentSolution(firstConflict.agent1)) queue.Add(agent1HighLevelNode);
 
-                HighLevelNode agent2HighLevelNode = new HighLevelNode(nowNode.environment);
+                HighLevelNode agent2HighLevelNode = new HighLevelNode(nowNode);
                 agent2HighLevelNode.environment.constraints[firstConflict.agent2].edgeConstraints.Add(new EdgeConstraint(firstConflict.time, firstConflict.edgeLocation2, firstConflict.edgeLocation1));
                 if (agent2HighLevelNode.computeAgentSolution(firstConflict.agent2)) queue.Add(agent2HighLevelNode);
             }
@@ -566,6 +674,38 @@ public class CBS : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (done)
+        {
+            for (int i = 0; i < robots.Count; i++)
+            {
+                if (solution[i].Count == 0) continue;
+
+                if (simulationTime > solution[i][solution[i].Count - 1].time)
+                {
+                    robots[i].transform.position = new Vector3(solution[i][solution[i].Count - 1].location.x, 0.4f, solution[i][solution[i].Count - 1].location.y);
+                    robots[i].transform.localRotation = Quaternion.Euler(0, 90 * solution[i][solution[i].Count - 1].direction, 0);
+                    continue;
+                }
+
+                int actionIndex = -1;
+                for (int j = 1; j < solution[i].Count; j++)
+                {
+                    if (simulationTime >= solution[i][j - 1].time && simulationTime <= solution[i][j].time)
+                    {
+                        actionIndex = j;
+                        break;
+                    }
+                }
+
+                if (actionIndex == -1) continue;
+
+                Vector2 robotPos = Vector2.Lerp(solution[i][actionIndex - 1].location, solution[i][actionIndex].location, simulationTime - solution[i][actionIndex - 1].time);
+                float robotDirection = Mathf.Lerp(solution[i][actionIndex - 1].direction, solution[i][actionIndex].direction, simulationTime - solution[i][actionIndex - 1].time);
+
+                robots[i].transform.position = new Vector3(robotPos.x, 0.4f, robotPos.y);
+                robots[i].transform.localRotation = Quaternion.Euler(0, 90 * robotDirection, 0);
+            }
+            if (autoSimulation) simulationTime += Time.deltaTime * simulationSpeed;
+        }
     }
 }
