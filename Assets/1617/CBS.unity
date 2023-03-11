@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 227225028}
   - component: {fileID: 227225027}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -213,8 +213,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 227225026}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.38734102, y: -1.569643, z: 3.2129455}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 1, y: 0, z: 1}
+  m_LocalScale: {x: 3, y: 0.1, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -296,14 +296,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 234295747}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.49896795, y: -0, z: -0, w: 0.8666205}
+  m_LocalPosition: {x: 0.78, y: 5.34, z: -1.07}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 59.863, y: 0, z: 0}
 --- !u!1 &974457183
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,6 +345,13 @@ MonoBehaviour:
   - {x: 2, y: 0}
   - {x: 0, y: 0}
   floor: {fileID: 227225026}
+  robotPrefab: {fileID: 5981920277532772858, guid: b4ef292cacb714509a5843c96718bfbf, type: 3}
+  obstaclePrefab: {fileID: 5933918297502478841, guid: d3d7ed0bf5c9348f0a908c1ace8fafa1, type: 3}
+  robots: []
+  simulationTime: 0
+  done: 0
+  autoSimulation: 0
+  simulationSpeed: 0
 --- !u!4 &974457185
 Transform:
   m_ObjectHideFlags: 0
