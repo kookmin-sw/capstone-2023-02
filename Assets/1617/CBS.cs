@@ -533,17 +533,12 @@ public class HighLevelNode
 
 public class CBS : MonoBehaviour
 {
-    public Vector2 dimension;
-
-    public Vector2[] obstacles;
-
-    public Vector2[] starts;
-    public int[] directions;
-    public Vector2[] goals;
+    public MapData mapData;
 
     public GameObject floor;
     public GameObject robotPrefab;
     public GameObject obstaclePrefab;
+    public GameObject flagPrefab;
 
     public List<GameObject> robots;
 
@@ -561,13 +556,25 @@ public class CBS : MonoBehaviour
         simulationSpeed = 1f;
         done = false;
 
+        Vector2 dimension = mapData.dimension;
+        Vector2[] obstacles = mapData.obstacles;
+        Vector2[] starts = mapData.starts.ToArray();
+        int[] directions = mapData.directions.ToArray();
+        Vector2[] goals = mapData.goals.ToArray();
+
         floor.transform.localScale = new Vector3(dimension.x, 0.1f, dimension.y);
         floor.transform.position = new Vector3(dimension.x / 2f - 0.5f, 0, dimension.y / 2f - 0.5f);
 
         for (int i = 0; i < starts.Length; i++)
         {
+            Color color = Random.ColorHSV();
+
             GameObject robot = Instantiate(robotPrefab, new Vector3(starts[i].x, 0.4f, starts[i].y), Quaternion.identity);
+            robot.GetComponent<Renderer>().material.SetColor("_Color", color);
             robots.Add(robot);
+
+            GameObject flag = Instantiate(flagPrefab, new Vector3(goals[i].x, 0.051f, goals[i].y), Quaternion.identity);
+            flag.GetComponent<Renderer>().material.SetColor("_Color", color);
         }
 
         for (int i = 0; i < obstacles.Length; i++)
@@ -700,7 +707,11 @@ public class CBS : MonoBehaviour
                 if (actionIndex == -1) continue;
 
                 Vector2 robotPos = Vector2.Lerp(solution[i][actionIndex - 1].location, solution[i][actionIndex].location, simulationTime - solution[i][actionIndex - 1].time);
-                float robotDirection = Mathf.Lerp(solution[i][actionIndex - 1].direction, solution[i][actionIndex].direction, simulationTime - solution[i][actionIndex - 1].time);
+                int previousDirection = solution[i][actionIndex - 1].direction;
+                int nextDirection = solution[i][actionIndex].direction;
+                if (previousDirection == 0 && nextDirection == 3) previousDirection += 4;
+                if (previousDirection == 3 && nextDirection == 0) nextDirection += 4;
+                float robotDirection = Mathf.Lerp(previousDirection, nextDirection, simulationTime - solution[i][actionIndex - 1].time);
 
                 robots[i].transform.position = new Vector3(robotPos.x, 0.4f, robotPos.y);
                 robots[i].transform.localRotation = Quaternion.Euler(0, 90 * robotDirection, 0);

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -333,20 +333,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db0828e14e6ff844da8a9b9b3b919be7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dimension: {x: 3, y: 3}
-  obstacles:
-  - {x: 0, y: 1}
-  - {x: 2, y: 1}
-  starts:
-  - {x: 0, y: 0}
-  - {x: 2, y: 0}
-  directions: 0000000000000000
-  goals:
-  - {x: 2, y: 0}
-  - {x: 0, y: 0}
+  mapData: {fileID: 11400000, guid: ace6d1fd0d7b6814eabd3a6993c63fc6, type: 2}
   floor: {fileID: 227225026}
   robotPrefab: {fileID: 5981920277532772858, guid: b4ef292cacb714509a5843c96718bfbf, type: 3}
   obstaclePrefab: {fileID: 5933918297502478841, guid: d3d7ed0bf5c9348f0a908c1ace8fafa1, type: 3}
+  flagPrefab: {fileID: 2451119122259305466, guid: 3133da7aee89298458b8c892c8142aaa, type: 3}
   robots: []
   simulationTime: 0
   done: 0
