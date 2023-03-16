@@ -12,5 +12,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2216eacaa46e6df4ca7f8832f2acfe24, type: 3}
   m_Name: Map Data 1
   m_EditorClassIdentifier: 
-  dimension: {x: 0, y: 0}
-  obstacles: []
+  dimension: {x: 9, y: 9}
+  obstacles:
+  - {x: 4, y: 8}
+  - {x: 6, y: 5}
+  - {x: 3, y: 0}
+  - {x: 2, y: 4}
+  - {x: 0, y: 7}
+  - {x: 7, y: 4}
+  - {x: 4, y: 2}
+  - {x: 4, y: 0}
+  - {x: 5, y: 6}
+  - {x: 7, y: 8}
+  - {x: 8, y: 2}
+  - {x: 5, y: 5}
+  - {x: 5, y: 1}
+  - {x: 1, y: 5}
+  - {x: 2, y: 1}
+  - {x: 2, y: 6}
+  - {x: 5, y: 3}
+  - {x: 0, y: 1}
+  - {x: 0, y: 0}
+  - {x: 3, y: 6}
+  - {x: 1, y: 4}
+  - {x: 0, y: 3}
+  - {x: 6, y: 8}
+  - {x: 2, y: 7}
+  - {x: 6, y: 4}
+  - {x: 7, y: 1}
+  - {x: 6, y: 3}
+  starts:
+  - {x: 6, y: 2}
+  - {x: 1, y: 6}
+  - {x: 7, y: 0}
+  - {x: 5, y: 8}
+  directions: 01000000010000000000000003000000
+  goals:
+  - {x: 4, y: 5}
+  - {x: 3, y: 3}
+  - {x: 3, y: 8}
+  - {x: 7, y: 7}

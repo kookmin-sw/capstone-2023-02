@@ -48,10 +48,22 @@ public class MapData : ScriptableObject
                 if (start == newStart)
                 {
                     valid = false;
+                    break;
                 }
             }
-            if (valid) starts.Add(newStart);
-            else continue;
+            if (!valid) continue;
+
+            foreach (Vector2 obstacle in obstacles)
+            {
+                if (obstacle == newStart)
+                {
+                    valid = false;
+                    break;
+                }
+            }
+            if (!valid) continue;
+
+            starts.Add(newStart);
             directions.Add(Random.Range(0, 4));
             break;
         }
@@ -66,8 +78,19 @@ public class MapData : ScriptableObject
                     valid = false;
                 }
             }
-            if (valid) goals.Add(newGoal);
-            else continue;
+            if (!valid) continue;
+
+            foreach (Vector2 obstacle in obstacles)
+            {
+                if (obstacle == newGoal)
+                {
+                    valid = false;
+                    break;
+                }
+            }
+            if (!valid) continue;
+
+            goals.Add(newGoal);
             break;
         }
     }

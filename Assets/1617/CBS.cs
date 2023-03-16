@@ -564,12 +564,16 @@ public class CBS : MonoBehaviour
 
         floor.transform.localScale = new Vector3(dimension.x, 0.1f, dimension.y);
         floor.transform.position = new Vector3(dimension.x / 2f - 0.5f, 0, dimension.y / 2f - 0.5f);
+        floor.GetComponent<Renderer>().material.SetColor("_Color", Color.grey);
+
+        Camera.main.transform.position = new Vector3(dimension.x / 2f - 0.5f, dimension.x * 2f, dimension.y / 2f - 0.5f);
 
         for (int i = 0; i < starts.Length; i++)
         {
             Color color = Random.ColorHSV();
 
             GameObject robot = Instantiate(robotPrefab, new Vector3(starts[i].x, 0.4f, starts[i].y), Quaternion.identity);
+            robot.transform.localRotation = Quaternion.Euler(0, 90 * directions[i], 0);
             robot.GetComponent<Renderer>().material.SetColor("_Color", color);
             robots.Add(robot);
 
