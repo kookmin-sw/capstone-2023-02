@@ -7,15 +7,18 @@ public class Planner : MonoBehaviour
 {
     public bool __DEBUG__ = true;
 
+    public bool ignoreCollision = false;
     public float scale;
     public GameObject block;
     public GameObject plane;
     // For Topview
     public GameObject camera;
+    public MapData mapData;
 
     // For Map
     private int rows;
     private int cols;
+    private int edges;
     // true: has way, false: obstacle
     // private bool[,] map = {
     //     {true, true, true},
@@ -42,6 +45,7 @@ public class Planner : MonoBehaviour
         // Generate Map
         rows = map.GetLength(0);
         cols = map.GetLength(1);
+        edges = Motion.positionMotions.Length;
         for (int r = 0; r < rows; r++)
         {
             for (int c = 0; c < cols; c++)
@@ -67,10 +71,14 @@ public class Planner : MonoBehaviour
 
         // Planning Setting
         vertexCollisionInterval = new SortedSet<Interval>[rows, cols];
-        // edgeCollisionInterval = new SortedSet<Interval>[rows, cols];
+        edgeCollisionInterval = new SortedSet<Interval>[rows, cols, edges];
         for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
+            {
                 vertexCollisionInterval[r, c] = new SortedSet<Interval>();
+                for (int e = 0; e < edges; e++)
+                    edgeCollisionInterval[r, c, e] = new SortedSet<Interval>();
+            }
 
         // Test
     }
@@ -84,13 +92,14 @@ public class Planner : MonoBehaviour
 
     public void requestPlan(Robot robot) { planQueue.Enqueue(robot, -robot.requestTime); }
 
-    void makePlan()
+    void makePlan(int limitIteration = 1000)
     {
         if (__DEBUG__) Debug.Log("Make Plan");
         Robot robot = planQueue.Peek();
-        float[,] g = new float[rows, cols];
-        float[,] h = new float[rows, cols]; // heuritic = estimate time + euclid distance
-        bool[,] v = new bool[rows, cols]; // visited
+        int iteration = 0;
+        float[,,] g = new float[rows, cols, edges + 1];
+        float[,,] h = new float[rows, cols, edges + 1];
+        bool[,,] v = new bool[rows, cols, edges]; // visited
         PriorityQueue<State, float> open = new PriorityQueue<State, float>(Comparer<float>.Default);
         // If robot has no path by collision
         // robot goes to route and waits few seconds, and plans again
@@ -99,36 +108,43 @@ public class Planner : MonoBehaviour
                                 robot.requestTime,
                                 new Interval(robot.requestTime, robot.requestTime + unitTime));
         State goal = null;
-        h[(int)robot.source.x, (int)robot.source.z] = g[(int)robot.source.x, (int)robot.source.z] = 0;
-        v[(int)robot.source.x, (int)robot.source.z] = true;
+
+        h[(int)robot.source.x, (int)robot.source.z, edges] = g[(int)robot.source.x, (int)robot.source.z, edges] = 0;
         open.Enqueue(start, 0f);
-        while (open.Count > 0)
+        while (open.Count > 0 && iteration < limitIteration && goal == null)
         {
             // remove smallest h-value from open
             State curr = open.Dequeue();
-            int r = (int)curr.position.x, c = (int)curr.position.z;
-            if (__DEBUG__) Debug.Log(r + ", " + c);
+            int r = (int)curr.position.x, c = (int)curr.position.z, e = curr.motion.edge;
+            if (__DEBUG__) Debug.Log(r + ", " + c + ", " + e);
             List<State> successor = getSuccessors(curr);
+            curr.successorCount = successor.Count;
             foreach (State next in successor)
             {
-                int nr = (int)next.position.x, nc = (int)next.position.z;
-                if (!v[nr, nc]) h[nr, nc] = g[nr, nc] = Mathf.Infinity;
-                if (g[nr, nc] > g[r, c] + next.motion.time)
+                if (__DEBUG__) Debug.Log("next: " + next);
+                int nr = (int)next.position.x, nc = (int)next.position.z, ne = next.motion.edge;
+                if (!v[nr, nc, ne]) h[nr, nc, ne] = g[nr, nc, ne] = Mathf.Infinity;
+                if (g[nr, nc, ne] > g[r, c, e] + next.motion.time)
                 {
-                    if (__DEBUG__) Debug.Log("\t" + nr + ", " + nc);
-                    v[nr, nc] = true;
-                    g[nr, nc] = g[r, c] + next.motion.time;
+                    if (__DEBUG__) Debug.Log("\t" + nr + ", " + nc + ", " + ne);
+                    v[nr, nc, ne] = true;
+                    g[nr, nc, ne] = g[r, c, e] + next.motion.time;
 
                     Vector3 apart = robot.destination - next.position;
-                    h[nr, nc] = g[r, c] + Mathf.Abs(apart.x) + Mathf.Abs(apart.z);
+                    h[nr, nc, ne] = g[r, c, e] + Mathf.Abs(apart.x) + Mathf.Abs(apart.z);
                     if (nr == (int)robot.destination.x &&
                         nc == (int)robot.destination.z)
                         goal = next;
 
-                    open.Enqueue(next, -h[nr, nc]);
+                    curr.openCount++;
+                    open.Enqueue(next, -h[nr, nc, ne]);
                 }
             }
-            if (goal != null) break;
+
+            if (curr.openCount == 0)
+            {
+                // Implement
+            }
 
             if (__DEBUG__)
             {
@@ -140,6 +156,7 @@ public class Planner : MonoBehaviour
                 log += "}";
                 Debug.Log(log);
             }
+            iteration++;
         }
 
         // Backtracking
@@ -178,7 +195,7 @@ public class Planner : MonoBehaviour
             float beginTime = state.interval.begin + motion.time;
             float endTime = state.interval.end + motion.time;
             Interval interval = new Interval(beginTime, endTime);
-            if (isCollisionOccur(interval, r, c)) continue;
+            if (isCollisionOccur(interval, r, c) && !ignoreCollision) continue;
 
             successor.Add(new State(state, position, motion, time, interval));
         }

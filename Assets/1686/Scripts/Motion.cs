@@ -67,6 +67,8 @@ public class Motion
         Motion.left,
         Motion.right,
     };
+
+    // TODO: Make more clear
     public int edge
     {
         get
@@ -77,8 +79,9 @@ public class Motion
             // 0, +: 011
             // 0, 0: 100
             if (deltaPosition.x == 0f && deltaPosition.z == 0f) return 4;
-            return (((deltaPosition.x <= 0f) ? 0 : 1) << 1) +
-                    ((deltaPosition.z <= 0f) ? 0 : 1);
+            return  ((deltaPosition.x <= 0f) ? 0 : 1) +
+                    ((deltaPosition.z <= 0f) ? 0 : 1) +
+                    ((deltaPosition.x == 0f) ? 0 : 2);
         }
     }
 }

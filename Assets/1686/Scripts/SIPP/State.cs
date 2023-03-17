@@ -9,6 +9,7 @@ public class State
     public Motion motion; // reach Motion
     public Vector3 position;
     public float time;
+    public int openCount = 0;
     public int successorCount = 0;
 
     public State(Vector3 _position, float _time)
