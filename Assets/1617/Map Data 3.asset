@@ -19,7 +19,7 @@ MonoBehaviour:
   starts:
   - {x: 0, y: 0}
   - {x: 2, y: 0}
-  directions: 00000000
+  directions: 0000000000000000
   goals:
   - {x: 2, y: 2}
   - {x: 0, y: 2}

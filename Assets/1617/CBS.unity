@@ -333,7 +333,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db0828e14e6ff844da8a9b9b3b919be7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapData: {fileID: 11400000, guid: ebc38715317ab4d6d831cf7947badb91, type: 2}
+  mapData: {fileID: 11400000, guid: ace6d1fd0d7b6814eabd3a6993c63fc6, type: 2}
   floor: {fileID: 227225026}
   robotPrefab: {fileID: 5981920277532772858, guid: b4ef292cacb714509a5843c96718bfbf, type: 3}
   obstaclePrefab: {fileID: 5933918297502478841, guid: d3d7ed0bf5c9348f0a908c1ace8fafa1, type: 3}
