@@ -47,9 +47,9 @@ public class State
 
     public override string ToString()
     {
-        return "State(" + 
-               "position: [" + (int)position.x + ", " + (int) position.z + "]," +
-               "motion: [" + motion.deltaPosition + ", " + motion.deltaRotation + "]" + 
+        return "State(" +
+               "position: [" + (int)position.x + ", " + (int)position.z + "]," +
+               "motion: " + motion +
                ")";
     }
 }

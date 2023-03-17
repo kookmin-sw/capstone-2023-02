@@ -5,20 +5,15 @@ using UnityEngine;
 public class Robot : MonoBehaviour
 {
     public Planner planner;
-    public Motion[] availableMotions = {
-        Motion.forward,
-        Motion.back,
-        Motion.left,
-        Motion.right,
-    };
     public Vector3 source;
     public Vector3 destination;
     public Queue<Motion> motionToPath = new Queue<Motion>();
     public float speed = 0.5f;
-    public float angularSpeed = 90f;
+    public float angularSpeed = 1f;
     // For route priority
     public float requestTime;
     private Motion motion = Motion.none;
+    private float motionTime = 0f;
 
     // Start is called before the first frame update
     void Start()
@@ -31,15 +26,17 @@ public class Robot : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (motion.time <= 0f)
+        if (motion.time <= motionTime)
         {
             if (motionToPath.Count == 0) return;
             motion = motionToPath.Dequeue();
+            motionTime = 0;
         }
         Vector3 velocity = motion.deltaPosition * speed;
         transform.position += velocity * Time.deltaTime;
-        transform.Rotate(Vector3.up, angularSpeed * Time.deltaTime, Space.Self);
-        motion.time -= Time.deltaTime;
+        float rotateDegree = motion.deltaRotation * angularSpeed;
+        transform.Rotate(Vector3.up, rotateDegree * Time.deltaTime, Space.Self);
+        motionTime += Time.deltaTime;
     }
 
     public void setRoute(Vector3 route)

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct Motion
+public class Motion
 {
     public Vector3 deltaPosition;
     public float deltaRotation;
@@ -36,6 +36,15 @@ public struct Motion
         time = _time;
     }
 
+    public override string ToString()
+    {
+        return "Motion(" +
+            "move: " + deltaPosition +
+            ", rotate: " + deltaRotation +
+            ", time: " + time +
+            ")";
+    }
+
     private static Motion _wait = new Motion();
     public static Motion wait { get { return _wait; } }
     private static Motion _forward = new Motion(Vector3.forward);
@@ -52,4 +61,24 @@ public struct Motion
     public static Motion ccw { get { return _ccw; } }
     private static Motion _none = new Motion(-1.0f);
     public static Motion none { get { return _none; } }
+    public static Motion[] positionMotions = {
+        Motion.forward,
+        Motion.back,
+        Motion.left,
+        Motion.right,
+    };
+    public int edge
+    {
+        get
+        {
+            // -, 0: 000
+            // +, 0: 001
+            // 0, -: 010
+            // 0, +: 011
+            // 0, 0: 100
+            if (deltaPosition.x == 0f && deltaPosition.z == 0f) return 4;
+            return (((deltaPosition.x <= 0f) ? 0 : 1) << 1) +
+                    ((deltaPosition.z <= 0f) ? 0 : 1);
+        }
+    }
 }

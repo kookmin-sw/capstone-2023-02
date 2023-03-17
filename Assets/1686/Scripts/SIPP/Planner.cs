@@ -32,7 +32,8 @@ public class Planner : MonoBehaviour
 
     // For Making Plan
     private PriorityQueue<Robot, float> planQueue = new PriorityQueue<Robot, float>(Comparer<float>.Default);
-    private SortedSet<Interval>[,] collisionInterval;
+    private SortedSet<Interval>[,] vertexCollisionInterval;
+    private SortedSet<Interval>[,,] edgeCollisionInterval;
     private float unitTime = 2f;
 
     // Start is called before the first frame update
@@ -65,10 +66,11 @@ public class Planner : MonoBehaviour
                                             cols * sqrScale));
 
         // Planning Setting
-        collisionInterval = new SortedSet<Interval>[rows, cols];
+        vertexCollisionInterval = new SortedSet<Interval>[rows, cols];
+        // edgeCollisionInterval = new SortedSet<Interval>[rows, cols];
         for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
-                collisionInterval[r, c] = new SortedSet<Interval>();
+                vertexCollisionInterval[r, c] = new SortedSet<Interval>();
 
         // Test
     }
@@ -89,7 +91,6 @@ public class Planner : MonoBehaviour
         float[,] g = new float[rows, cols];
         float[,] h = new float[rows, cols]; // heuritic = estimate time + euclid distance
         bool[,] v = new bool[rows, cols]; // visited
-        State[,] p = new State[rows, cols]; // path
         PriorityQueue<State, float> open = new PriorityQueue<State, float>(Comparer<float>.Default);
         // If robot has no path by collision
         // robot goes to route and waits few seconds, and plans again
@@ -97,6 +98,7 @@ public class Planner : MonoBehaviour
         State start = new State(robot.source,
                                 robot.requestTime,
                                 new Interval(robot.requestTime, robot.requestTime + unitTime));
+        State goal = null;
         h[(int)robot.source.x, (int)robot.source.z] = g[(int)robot.source.x, (int)robot.source.z] = 0;
         v[(int)robot.source.x, (int)robot.source.z] = true;
         open.Enqueue(start, 0f);
@@ -105,7 +107,7 @@ public class Planner : MonoBehaviour
             // remove smallest h-value from open
             State curr = open.Dequeue();
             int r = (int)curr.position.x, c = (int)curr.position.z;
-            // Debug.Log(r + ", " + c);
+            if (__DEBUG__) Debug.Log(r + ", " + c);
             List<State> successor = getSuccessors(curr);
             foreach (State next in successor)
             {
@@ -113,18 +115,20 @@ public class Planner : MonoBehaviour
                 if (!v[nr, nc]) h[nr, nc] = g[nr, nc] = Mathf.Infinity;
                 if (g[nr, nc] > g[r, c] + next.motion.time)
                 {
-                    // Debug.Log("\t" + nr + ", " + nc);
+                    if (__DEBUG__) Debug.Log("\t" + nr + ", " + nc);
                     v[nr, nc] = true;
                     g[nr, nc] = g[r, c] + next.motion.time;
 
                     Vector3 apart = robot.destination - next.position;
                     h[nr, nc] = g[r, c] + Mathf.Abs(apart.x) + Mathf.Abs(apart.z);
-                    p[nr, nc] = next;
+                    if (nr == (int)robot.destination.x &&
+                        nc == (int)robot.destination.z)
+                        goal = next;
 
                     open.Enqueue(next, -h[nr, nc]);
                 }
             }
-            if (v[(int)robot.destination.x, (int)robot.destination.z]) break;
+            if (goal != null) break;
 
             if (__DEBUG__)
             {
@@ -139,17 +143,17 @@ public class Planner : MonoBehaviour
         }
 
         // Backtracking
-        State track = p[(int)robot.destination.x, (int)robot.destination.z];
+        State track = goal;
         Stack<Motion> reversedMotion = new Stack<Motion>();
         while (track != null)
         {
-            if(__DEBUG__) Debug.Log("[" + (reversedMotion.Count + 1) + "] " + track);
-            collisionInterval[(int)track.position.x, (int)track.position.z].Add(track.interval);
+            if (__DEBUG__) Debug.Log("[" + (reversedMotion.Count + 1) + "] " + track);
+            vertexCollisionInterval[(int)track.position.x, (int)track.position.z].Add(track.interval);
             reversedMotion.Push(track.motion);
             track = track.previousState;
         }
         while (reversedMotion.Count > 0) robot.motionToPath.Enqueue(reversedMotion.Pop());
-        if(__DEBUG__) Debug.Log("Total Length: " + robot.motionToPath.Count);
+        if (__DEBUG__) Debug.Log("Total Length: " + robot.motionToPath.Count);
         planQueue.Dequeue();
 
         if (__DEBUG__) Debug.Log("Done");
@@ -164,7 +168,7 @@ public class Planner : MonoBehaviour
     {
         List<State> successor = new List<State>();
         Robot robot = planQueue.Peek();
-        foreach (Motion motion in robot.availableMotions)
+        foreach (Motion motion in Motion.positionMotions)
         {
             Vector3 position = state.position + motion.deltaPosition;
             int r = (int)position.x, c = (int)position.z;
@@ -174,30 +178,33 @@ public class Planner : MonoBehaviour
             float beginTime = state.interval.begin + motion.time;
             float endTime = state.interval.end + motion.time;
             Interval interval = new Interval(beginTime, endTime);
-
-            // Implement Collision Check
-            // TODO: Implement O(log n) finding algorithm (lowerbound)
-            bool isCollisionOccur = false;
-            foreach (Interval collision in collisionInterval[r, c])
-            {
-                if (__DEBUG__)
-                {
-                    Debug.Log(r + ", " + c);
-                    Debug.Log("\tcollision(" + collision.begin + ", " + collision.end + ")");
-                    Debug.Log("\tInterval(" + interval.begin + ", " + interval.end + ")");
-                }
-                if (collision.isOverlap(interval))
-                {
-                    if (__DEBUG__) Debug.Log("Collision Detect!");
-                    isCollisionOccur = true;
-                    break;
-                }
-            }
-            if (isCollisionOccur) continue;
+            if (isCollisionOccur(interval, r, c)) continue;
 
             successor.Add(new State(state, position, motion, time, interval));
         }
 
         return successor;
+    }
+
+    // Implement Collision Check
+    // TODO: Implement O(log n) finding algorithm (lowerbound)
+    //          - vertexCollisionInterval Data Type to Set(Red-Black Tree)
+    bool isCollisionOccur(Interval interval, int r, int c)
+    {
+        foreach (Interval collision in vertexCollisionInterval[r, c])
+        {
+            if (__DEBUG__)
+            {
+                Debug.Log(r + ", " + c);
+                Debug.Log("\tcollision(" + collision.begin + ", " + collision.end + ")");
+                Debug.Log("\tInterval(" + interval.begin + ", " + interval.end + ")");
+            }
+            if (collision.isOverlap(interval))
+            {
+                if (__DEBUG__) Debug.Log("Collision Detect!");
+                return true;
+            }
+        }
+        return false;
     }
 }
