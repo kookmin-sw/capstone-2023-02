@@ -29,6 +29,10 @@
 
 로봇 진화형 건물 (미래관)
 
+
+
+<div style="position: relative; overflow: hidden; padding-top: 56.25%;"><iframe src="https://share.synthesia.io/embeds/videos/c3633c3b-e10c-495e-8d16-4cd60f616770" loading="lazy" title="Synthesia video player - Your AI video" allow="encrypted-media; fullscreen;" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0; margin: 0; overflow:hidden;"></iframe></div>
+
 ### 2. 소개 영상
 
 프로젝트 소개하는 영상을 추가하세요
