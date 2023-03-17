@@ -595,7 +595,7 @@ public class CBS : MonoBehaviour
         }
         queue.Add(root);
 
-        int MAXXX = 1000;
+        int MAXXX = 10000;
 
         while (queue.Count != 0)
         {
