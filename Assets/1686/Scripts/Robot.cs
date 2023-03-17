@@ -15,6 +15,7 @@ public class Robot : MonoBehaviour
     public Vector3 destination;
     public Queue<Motion> motionToPath = new Queue<Motion>();
     public float speed = 0.5f;
+    public float angularSpeed = 90f;
     // For route priority
     public float requestTime;
     private Motion motion = Motion.none;
@@ -37,6 +38,7 @@ public class Robot : MonoBehaviour
         }
         Vector3 velocity = motion.deltaPosition * speed;
         transform.position += velocity * Time.deltaTime;
+        transform.Rotate(Vector3.up, angularSpeed * Time.deltaTime, Space.Self);
         motion.time -= Time.deltaTime;
     }
 

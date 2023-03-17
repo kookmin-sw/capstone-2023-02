@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028305, g: 0.22571313, b: 0.3069213, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -419,16 +419,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2028652960}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4a7901bb18006477b98f42c4c0d429cc, type: 3}
+  m_Script: {fileID: 11500000, guid: dfa5e5b0758184bdab234f5aff151520, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  __DEBUG__: 1
   scale: 0.5
   block: {fileID: 8818656211664730392, guid: 64d540d5d77194a4b99c045fa3d5e842, type: 3}
   plane: {fileID: 2011437892481256783, guid: 9f8dddef915d648398fed1de4d7c5129, type: 3}
   camera: {fileID: 963194225}
-  robotPath:
-  - {x: 0, y: 0, z: 2, w: 2}
-  - {x: 2, y: 0, z: 0, w: 2}
 --- !u!1001 &2110128263
 PrefabInstance:
   m_ObjectHideFlags: 0
