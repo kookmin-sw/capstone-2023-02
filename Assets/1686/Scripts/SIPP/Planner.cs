@@ -141,9 +141,29 @@ public class Planner : MonoBehaviour
                 }
             }
 
-            if (curr.openCount == 0)
+            // There is no way casued by collision 
+            if (curr.openCount == 0 && curr.collisionCount > 0)
             {
-                // Implement
+                // Wait a second
+                State next = null;
+                Motion motion = new Motion(1f); // wait
+                float time = curr.time + motion.time;
+                float beginTime = curr.interval.begin + motion.time;
+                float endTime = curr.interval.end + motion.time;
+                Interval interval = new Interval(beginTime, endTime);
+                if (!isCollisionOccur(interval, r, c))
+                {
+                    next = new State(curr, curr.position, motion, time, interval);
+                }
+                else
+                {
+                    int pr = (int)curr.previousState.position.x, pc = (int)curr.previousState.position.z;
+                    // if (!isCollisionOccur(interval, pr, pc)) next =
+                    // TODO return prev node
+                }
+
+                // if(next != null) open.Enqueue(next, 0);
+                v[r, c, e] = false; // refuse current movement
             }
 
             if (__DEBUG__)
@@ -195,7 +215,11 @@ public class Planner : MonoBehaviour
             float beginTime = state.interval.begin + motion.time;
             float endTime = state.interval.end + motion.time;
             Interval interval = new Interval(beginTime, endTime);
-            if (isCollisionOccur(interval, r, c) && !ignoreCollision) continue;
+            if (isCollisionOccur(interval, r, c))
+            {
+                state.collisionCount++;
+                if (!ignoreCollision) continue;
+            }
 
             successor.Add(new State(state, position, motion, time, interval));
         }

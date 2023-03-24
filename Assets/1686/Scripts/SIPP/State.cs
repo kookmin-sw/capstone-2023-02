@@ -11,6 +11,7 @@ public class State
     public float time;
     public int openCount = 0;
     public int successorCount = 0;
+    public int collisionCount = 0;
 
     public State(Vector3 _position, float _time)
     {
