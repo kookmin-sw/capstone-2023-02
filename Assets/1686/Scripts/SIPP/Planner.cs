@@ -1,5 +1,5 @@
-using System.Threading;
-using System.Collections;
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,248 +7,218 @@ namespace SIPP
 {
     public class Planner : MonoBehaviour
     {
-        public bool __DEBUG__ = true;
-
-        public bool ignoreCollision = false;
-        public float scale;
-        public GameObject block;
-        public GameObject plane;
-        // For Topview
-        public GameObject camera;
+        private float unitTime = 1f;
         public MapData mapData;
-
-        // For Map
+        private List<Interval>[][] safeIntervals;
+        private PriorityQueue<Robot, float> requests = new PriorityQueue<Robot, float>(Comparer<float>.Default);
         private int rows;
         private int cols;
-        private int edges;
-        // true: has way, false: obstacle
-        // private bool[,] map = {
-        //     {true, true, true},
-        //     {false, true, false},
-        //     {true, true, true}
-        // };
-        private bool[,] map = {
-        {true, true, true},
-        {false, false, true},
-        {true, true, true},
-        {true, false, true},
-        {true, true, true}
-    };
+        public float scale = 1f;
+        public GameObject floorPrefab;
+        public GameObject obstaclePrefab;
+        public GameObject robotPrefab;
+        public bool displayMap = true;
 
-        // For Making Plan
-        private PriorityQueue<Robot, float> planQueue = new PriorityQueue<Robot, float>(Comparer<float>.Default);
-        private SortedSet<Interval>[,] vertexCollisionInterval;
-        private SortedSet<Interval>[,,] edgeCollisionInterval;
-        private float unitTime = 2f;
 
         // Start is called before the first frame update
         void Start()
         {
-            // Generate Map
-            rows = map.GetLength(0);
-            cols = map.GetLength(1);
-            edges = Motion.positionMotions.Length;
+            rows = (int)mapData.dimension.x;
+            cols = (int)mapData.dimension.y;
+            safeIntervals = new List<Interval>[rows][];
             for (int r = 0; r < rows; r++)
             {
+                safeIntervals[r] = new List<Interval>[cols];
                 for (int c = 0; c < cols; c++)
                 {
-                    GameObject instance;
-                    if (map[r, c])
-                        instance = plane;
-                    else
-                        instance = block;
-                    instance = Instantiate(instance, new Vector3(scale * r, 0f, scale * c), Quaternion.Euler(0f, 0f, 0f));
-                    instance.transform.localScale *= scale;
+                    safeIntervals[r][c] = new List<Interval>();
+                    safeIntervals[r][c].Add(new Interval(0, Mathf.Infinity));
                 }
             }
-            float sqrScale = scale * scale;
+            foreach (Vector2 obstacle in mapData.obstacles)
+                safeIntervals[(int)obstacle.x][(int)obstacle.y].Clear();
 
-            // Setting Topview
-            camera.transform.position = new Vector3(rows * sqrScale,
-                                                    Mathf.Max(rows, cols) * scale * 2f,
-                                                    cols * sqrScale);
-            camera.transform.LookAt(new Vector3(rows * sqrScale,
-                                                0f,
-                                                cols * sqrScale));
-
-            // Planning Setting
-            vertexCollisionInterval = new SortedSet<Interval>[rows, cols];
-            edgeCollisionInterval = new SortedSet<Interval>[rows, cols, edges];
-            for (int r = 0; r < rows; r++)
-                for (int c = 0; c < cols; c++)
-                {
-                    vertexCollisionInterval[r, c] = new SortedSet<Interval>();
-                    for (int e = 0; e < edges; e++)
-                        edgeCollisionInterval[r, c, e] = new SortedSet<Interval>();
-                }
-
-            // Test
+            if (displayMap) Display();
         }
+
+
 
         // Update is called once per frame
         void Update()
         {
-            // Thread
-            if (planQueue.Count > 0) makePlan();
+            if (requests.Count > 0) MakePlan();
         }
 
-        public void requestPlan(Robot robot) { planQueue.Enqueue(robot, -robot.requestTime); }
-
-        void makePlan(int limitIteration = 1000)
+        public void RequestPlan(Robot robot)
         {
-            if (__DEBUG__) Debug.Log("Make Plan");
-            Robot robot = planQueue.Peek();
-            int iteration = 0;
-            float[,,] g = new float[rows, cols, edges + 1];
-            float[,,] h = new float[rows, cols, edges + 1];
-            bool[,,] v = new bool[rows, cols, edges]; // visited
-            PriorityQueue<State, float> open = new PriorityQueue<State, float>(Comparer<float>.Default);
-            // If robot has no path by collision
-            // robot goes to route and waits few seconds, and plans again
-            PriorityQueue<State, float> route = new PriorityQueue<State, float>(Comparer<float>.Default);
-            State start = new State(robot.source,
-                                    robot.requestTime,
-                                    new Interval(robot.requestTime, robot.requestTime + unitTime));
-            State goal = null;
+            requests.Enqueue(robot, -robot.requestTime);
+        }
 
-            h[(int)robot.source.x, (int)robot.source.z, edges] = g[(int)robot.source.x, (int)robot.source.z, edges] = 0;
-            open.Enqueue(start, 0f);
-            while (open.Count > 0 && iteration < limitIteration && goal == null)
+
+        void MakePlan(int limitIteration = 1000)
+        {
+            GeneralClass.Log("Make Plan");
+            int iteration = 0;
+            Robot robot = requests.Peek();
+            GridMap grid = new GridMap(safeIntervals);
+            PriorityQueue<State, float> open = new PriorityQueue<State, float>(Comparer<float>.Default);
+
+            int gr = (int)robot.destination.x, gc = (int)robot.destination.z;
+            int r = (int)robot.source.x, c = (int)robot.source.z;
+            State curr = new State(robot.source,
+                                   new Interval(Time.time, Time.time + unitTime),
+                                   Time.time);
+
+            int idx = LowerboundIndex<Interval>(safeIntervals[r][c], curr.interval);
+            GridUnit unit = grid.map[r][c][idx];
+            unit.gValue = unit.hValue = 0;
+            unit.visited = true;
+
+            open.Enqueue(curr, unit.hValue);
+            while (open.Count > 0 && iteration < limitIteration)
             {
                 // remove smallest h-value from open
-                State curr = open.Dequeue();
-                int r = (int)curr.position.x, c = (int)curr.position.z, e = curr.motion.edge;
-                if (__DEBUG__) Debug.Log(r + ", " + c + ", " + e);
-                List<State> successor = getSuccessors(curr);
-                curr.successorCount = successor.Count;
-                foreach (State next in successor)
+                curr = open.Dequeue();
+                r = (int)curr.position.x;
+                c = (int)curr.position.z;
+                // check robot reached destination
+                if (r == gr && c == gc) break;
+                idx = LowerboundIndex<Interval>(safeIntervals[r][c], curr.interval);
+                unit = grid.map[r][c][idx];
+                GeneralClass.Log("curr: " + curr, GeneralClass.debugLevel.low);
+                List<State> successors = GetSuccessors(curr);
+                foreach (State next in successors)
                 {
-                    if (__DEBUG__) Debug.Log("next: " + next);
-                    int nr = (int)next.position.x, nc = (int)next.position.z, ne = next.motion.edge;
-                    if (!v[nr, nc, ne]) h[nr, nc, ne] = g[nr, nc, ne] = Mathf.Infinity;
-                    if (g[nr, nc, ne] > g[r, c, e] + next.motion.time)
+                    int nr = (int)next.position.x, nc = (int)next.position.z, ni = LowerboundIndex<Interval>(safeIntervals[nr][nc], next.interval);
+                    GridUnit nUnit = grid.map[nr][nc][ni];
+                    if (!nUnit.visited) nUnit.gValue = nUnit.hValue = Mathf.Infinity;
+                    if (nUnit.gValue > unit.gValue + next.motion.time)
                     {
-                        if (__DEBUG__) Debug.Log("\t" + nr + ", " + nc + ", " + ne);
-                        v[nr, nc, ne] = true;
-                        g[nr, nc, ne] = g[r, c, e] + next.motion.time;
+                        GeneralClass.Log("\tnext: " + next, GeneralClass.debugLevel.low);
+                        nUnit.visited = true;
+                        nUnit.gValue = unit.gValue + next.motion.time;
 
                         Vector3 apart = robot.destination - next.position;
-                        h[nr, nc, ne] = g[r, c, e] + Mathf.Abs(apart.x) + Mathf.Abs(apart.z);
-                        if (nr == (int)robot.destination.x &&
-                            nc == (int)robot.destination.z)
-                            goal = next;
+                        nUnit.hValue = unit.gValue + Mathf.Abs(apart.x) + Mathf.Abs(apart.z);
 
-                        curr.openCount++;
-                        open.Enqueue(next, -h[nr, nc, ne]);
+                        open.Enqueue(next, -nUnit.hValue);
                     }
-                }
-
-                // There is no way casued by collision 
-                if (curr.openCount == 0 && curr.collisionCount > 0)
-                {
-                    // Wait a second
-                    State next = null;
-                    Motion motion = new Motion(1f); // wait
-                    float time = curr.time + motion.time;
-                    float beginTime = curr.interval.begin + motion.time;
-                    float endTime = curr.interval.end + motion.time;
-                    Interval interval = new Interval(beginTime, endTime);
-                    if (!isCollisionOccur(interval, r, c))
-                    {
-                        next = new State(curr, curr.position, motion, time, interval);
-                    }
-                    else
-                    {
-                        int pr = (int)curr.previousState.position.x, pc = (int)curr.previousState.position.z;
-                        // if (!isCollisionOccur(interval, pr, pc)) next =
-                        // TODO return prev node
-                    }
-
-                    // if(next != null) open.Enqueue(next, 0);
-                    v[r, c, e] = false; // refuse current movement
-                }
-
-                if (__DEBUG__)
-                {
-                    string log = "Open {\n";
-                    List<float> priorities = open.GetPriorities();
-                    List<State> elements = open.GetElements();
-                    for (int i = 0; i < priorities.Count; i++)
-                        log += "\t[" + (i + 1) + "]: " + elements[i].position + " " + priorities[i] + ",\n";
-                    log += "}";
-                    Debug.Log(log);
                 }
                 iteration++;
             }
 
+            if (r != gr || c != gc)
+            {
+                requests.Dequeue();
+                GeneralClass.Log("Planning Fail");
+                return;
+            }
             // Backtracking
-            State track = goal;
+            State track = curr;
             Stack<Motion> reversedMotion = new Stack<Motion>();
             while (track != null)
             {
-                if (__DEBUG__) Debug.Log("[" + (reversedMotion.Count + 1) + "] " + track);
-                vertexCollisionInterval[(int)track.position.x, (int)track.position.z].Add(track.interval);
+                GeneralClass.Log("[" + (reversedMotion.Count + 1) + "] " + track);
+                // safeIntervals[(int)track.position.x][(int)track.position.z].Add(track.interval);
                 reversedMotion.Push(track.motion);
-                track = track.previousState;
+                track = track.prev;
             }
             while (reversedMotion.Count > 0) robot.motionToPath.Enqueue(reversedMotion.Pop());
-            if (__DEBUG__) Debug.Log("Total Length: " + robot.motionToPath.Count);
-            planQueue.Dequeue();
-
-            if (__DEBUG__) Debug.Log("Done");
+            GeneralClass.Log("Total Length: " + robot.motionToPath.Count);
+            requests.Dequeue();
+            GeneralClass.Log("Planning Successful");
         }
 
-        void backPropagation()
+        public int LowerboundIndex<T>(List<T> list, T item, int startIdx = 0) where T : class, IComparable<T>
         {
-            // Implement Need
+            int idx = startIdx;
+            for (; idx < list.Count; idx++)
+                if (item.CompareTo(list[idx]) >= 0)
+                    break;
+            return idx;
         }
 
-        List<State> getSuccessors(State state)
+        List<State> GetSuccessors(State state)
         {
-            List<State> successor = new List<State>();
-            Robot robot = planQueue.Peek();
+            List<State> successors = new List<State>();
+            Robot robot = requests.Peek();
             foreach (Motion motion in Motion.positionMotions)
             {
                 Vector3 position = state.position + motion.deltaPosition;
                 int r = (int)position.x, c = (int)position.z;
                 if (r < 0 || r >= rows || c < 0 || c >= cols) continue; // out of map
-                if (!map[r, c]) continue; // obstacle
+                if (safeIntervals[r][c].Count == 0) continue; // obstacle
                 float time = state.time + motion.time;
                 float beginTime = state.interval.begin + motion.time;
                 float endTime = state.interval.end + motion.time;
                 Interval interval = new Interval(beginTime, endTime);
-                if (isCollisionOccur(interval, r, c))
-                {
-                    state.collisionCount++;
-                    if (!ignoreCollision) continue;
-                }
+                // if (isCollisionOccur(interval, r, c))
+                // {
+                //     state.collisionCount++;
+                //     if (!ignoreCollision) continue;
+                // }
 
-                successor.Add(new State(state, position, motion, time, interval));
+                State success = new State(position, interval, time);
+                success.motion = motion;
+                success.prev = state;
+                successors.Add(success);
             }
-
-            return successor;
+            return successors;
         }
 
-        // Implement Collision Check
-        // TODO: Implement O(log n) finding algorithm (lowerbound)
-        //          - vertexCollisionInterval Data Type to Set(Red-Black Tree)
-        bool isCollisionOccur(Interval interval, int r, int c)
+
+        void Display()
         {
-            foreach (Interval collision in vertexCollisionInterval[r, c])
+            Camera camera = Camera.main;
+            float sqrScale = scale * scale;
+            // Setting Topview
+            camera.transform.position = new Vector3(rows / 2f * scale,
+                                                    Mathf.Max(rows, cols) * scale * 2f,
+                                                    cols / 2f * scale);
+            camera.transform.LookAt(new Vector3(rows / 2f * scale,
+                                                0f,
+                                                cols / 2f * scale));
+            for (int r = 0; r < rows; r++)
             {
-                if (__DEBUG__)
+                for (int c = 0; c < cols; c++)
                 {
-                    Debug.Log(r + ", " + c);
-                    Debug.Log("\tcollision(" + collision.begin + ", " + collision.end + ")");
-                    Debug.Log("\tInterval(" + interval.begin + ", " + interval.end + ")");
-                }
-                if (collision.isOverlap(interval))
-                {
-                    if (__DEBUG__) Debug.Log("Collision Detect!");
-                    return true;
+                    GameObject instance;
+                    if (safeIntervals[r][c].Count > 0)
+                        instance = floorPrefab;
+                    else
+                        instance = obstaclePrefab;
+                    instance = Instantiate(instance,
+                                           new Vector3(scale * r, 0f, scale * c),
+                                           Quaternion.Euler(0f, 0f, 0f));
+                    instance.transform.localScale *= scale;
+                    instance.name = "floor" + r + ", " + c;
                 }
             }
-            return false;
+
+            for (int i = 0; i < mapData.starts.Count; i++)
+            {
+                Vector2 start = mapData.starts[i], goal = mapData.goals[i];
+                GameObject instance = Instantiate(robotPrefab,
+                                               new Vector3(scale * start.x, 0f, scale * start.y),
+                                               Quaternion.Euler(0f, 0f, 0f));
+                instance.transform.localScale *= scale;
+                Robot robot = instance.AddComponent<Robot>();
+                robot.planner = this;
+                robot.speed = scale;
+                robot.Request(start, goal);
+                ColorRobot(robot, start, goal);
+            }
+        }
+
+        void ColorRobot(Robot robot, Vector2 start, Vector2 goal)
+        {
+            Color color = UnityEngine.Random.ColorHSV();
+            robot.gameObject.GetComponent<Renderer>().material.SetColor("_Color", color);
+            //find by name
+            GameObject.Find("floor" + (int)start.x + ", " + (int)start.y)
+                      .GetComponent<Renderer>().material.SetColor("_Color", color);
+            GameObject.Find("floor" + (int)goal.x + ", " + (int)goal.y)
+                      .GetComponent<Renderer>().material.SetColor("_Color", color);
         }
     }
 }

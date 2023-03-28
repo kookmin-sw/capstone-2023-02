@@ -1,11 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace SIPP
 {
-    public class Interval : IComparable
+    public class Interval : IComparable<Interval>
     {
         public float begin;
         public float end;
@@ -23,13 +22,17 @@ namespace SIPP
             return e - b > 0;
         }
 
-        public int CompareTo(object obj)
+        public int CompareTo(Interval interval)
         {
-            Interval interval = obj as Interval;
             return Comparer<float>.Default.Compare(begin, interval.begin);
         }
 
+        public override string ToString()
+        {
+            return "Interval(" + begin + ", " + end + ")";
+        }
+
         private static Interval _zero = new Interval();
-        public static Interval zero { get { return _zero; } }
+        private static Interval _inf = new Interval(Mathf.Infinity, Mathf.Infinity);
     }
 }

@@ -19,9 +19,7 @@ public class Robot : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        transform.position = source * planner.scale;
-        requestTime = Time.time;
-        planner.requestPlan(this);
+
     }
 
     // Update is called once per frame
@@ -43,6 +41,16 @@ public class Robot : MonoBehaviour
     public void setRoute(Vector3 route)
     {
         source = route;
-        planner.requestPlan(this);
+        // planner.requestPlan(this);
+    }
+
+    public void Request(Vector2 start, Vector2 goal)
+    {
+        source.x = start.x;
+        source.z = start.y;
+        destination.x = goal.x;
+        destination.z = goal.y;
+        requestTime = Time.time;
+        planner.RequestPlan(this);
     }
 }
