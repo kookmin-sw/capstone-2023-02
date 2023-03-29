@@ -8,7 +8,7 @@ public class Robot : MonoBehaviour
     public Planner planner;
     public Vector3 source;
     public Vector3 destination;
-    public Queue<Motion> motionToPath = new Queue<Motion>();
+    public Queue<State> stateToPath = new Queue<State>();
     public float speed = 0.5f;
     public float angularSpeed = 1f;
     // For route priority
@@ -27,8 +27,9 @@ public class Robot : MonoBehaviour
     {
         if (motion.time <= motionTime)
         {
-            if (motionToPath.Count == 0) return;
-            motion = motionToPath.Dequeue();
+            if (stateToPath.Count == 0) return;
+            if (stateToPath.Peek().time > Time.time) return;
+            motion = stateToPath.Dequeue().motion;
             motionTime = 0;
         }
         Vector3 velocity = motion.deltaPosition * speed;

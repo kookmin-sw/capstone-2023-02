@@ -12,7 +12,7 @@ class GeneralClass
         very_high
     }
 
-    public static debugLevel debug = debugLevel.low;
+    private static debugLevel debug = debugLevel.low;
 
     public static void Log(string msg, debugLevel dlv = debugLevel.middle)
     {

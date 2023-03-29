@@ -66,8 +66,8 @@ namespace SIPP
             int gr = (int)robot.destination.x, gc = (int)robot.destination.z;
             int r = (int)robot.source.x, c = (int)robot.source.z;
             State curr = new State(robot.source,
-                                   new Interval(Time.time, Time.time + unitTime),
-                                   Time.time);
+                                   new Interval(robot.requestTime, robot.requestTime + unitTime),
+                                   robot.requestTime);
 
             int idx = LowerboundIndex<Interval>(safeIntervals[r][c], curr.interval);
             GridUnit unit = grid.map[r][c][idx];
@@ -90,13 +90,16 @@ namespace SIPP
                 foreach (State next in successors)
                 {
                     int nr = (int)next.position.x, nc = (int)next.position.z, ni = LowerboundIndex<Interval>(safeIntervals[nr][nc], next.interval);
+                    GeneralClass.Log("\tcheck" + next.interval + ": " + nr + ", " + nc + ", " + ni, GeneralClass.debugLevel.low);
                     GridUnit nUnit = grid.map[nr][nc][ni];
+
+                    GeneralClass.Log("\tcheck" + next.interval + ": " + safeIntervals[nr][nc][ni], GeneralClass.debugLevel.low);
                     if (!nUnit.visited) nUnit.gValue = nUnit.hValue = Mathf.Infinity;
-                    if (nUnit.gValue > unit.gValue + next.motion.time)
+                    if (nUnit.gValue > unit.gValue + next.time - curr.time + next.motion.time)
                     {
                         GeneralClass.Log("\tnext: " + next, GeneralClass.debugLevel.low);
                         nUnit.visited = true;
-                        nUnit.gValue = unit.gValue + next.motion.time;
+                        nUnit.gValue = unit.gValue + next.time - curr.time + next.motion.time;
 
                         Vector3 apart = robot.destination - next.position;
                         nUnit.hValue = unit.gValue + Mathf.Abs(apart.x) + Mathf.Abs(apart.z);
@@ -115,16 +118,22 @@ namespace SIPP
             }
             // Backtracking
             State track = curr;
-            Stack<Motion> reversedMotion = new Stack<Motion>();
+            Stack<State> reversedMotion = new Stack<State>();
             while (track != null)
             {
                 GeneralClass.Log("[" + (reversedMotion.Count + 1) + "] " + track);
-                // safeIntervals[(int)track.position.x][(int)track.position.z].Add(track.interval);
-                reversedMotion.Push(track.motion);
+                for (int i = 0; i < safeIntervals[(int)track.position.x][(int)track.position.z].Count; i++)
+                    GeneralClass.Log("\t[" + (i + 1) + "]: " + safeIntervals[(int)track.position.x][(int)track.position.z][i],
+                                     GeneralClass.debugLevel.low);
+                SplitInterval(safeIntervals[(int)track.position.x][(int)track.position.z], track.interval);
+                for (int i = 0; i < safeIntervals[(int)track.position.x][(int)track.position.z].Count; i++)
+                    GeneralClass.Log("\t[" + (i + 1) + "]: " + safeIntervals[(int)track.position.x][(int)track.position.z][i],
+                                     GeneralClass.debugLevel.low);
+                reversedMotion.Push(track);
                 track = track.prev;
             }
-            while (reversedMotion.Count > 0) robot.motionToPath.Enqueue(reversedMotion.Pop());
-            GeneralClass.Log("Total Length: " + robot.motionToPath.Count);
+            while (reversedMotion.Count > 0) robot.stateToPath.Enqueue(reversedMotion.Pop());
+            GeneralClass.Log("Total Length: " + robot.stateToPath.Count);
             requests.Dequeue();
             GeneralClass.Log("Planning Successful");
         }
@@ -133,35 +142,63 @@ namespace SIPP
         {
             int idx = startIdx;
             for (; idx < list.Count; idx++)
-                if (item.CompareTo(list[idx]) >= 0)
+                if (list[idx].CompareTo(item) >= 0)
                     break;
             return idx;
+        }
+
+        void SplitInterval(List<Interval> list, Interval splitBy)
+        {
+            int idx = LowerboundIndex<Interval>(list, splitBy);
+            Interval interval = list[idx];
+            if (interval.begin == splitBy.begin)
+                interval.begin = splitBy.end;
+            else
+            {
+                float tmp = interval.end;
+                interval.end = splitBy.begin;
+                if (interval.end == splitBy.end) return;
+                interval = new Interval(splitBy.end, tmp);
+                list.Insert(idx + 1, interval);
+            }
         }
 
         List<State> GetSuccessors(State state)
         {
             List<State> successors = new List<State>();
             Robot robot = requests.Peek();
+            int r = (int)state.position.x, c = (int)state.position.z;
             foreach (Motion motion in Motion.positionMotions)
             {
                 Vector3 position = state.position + motion.deltaPosition;
-                int r = (int)position.x, c = (int)position.z;
-                if (r < 0 || r >= rows || c < 0 || c >= cols) continue; // out of map
-                if (safeIntervals[r][c].Count == 0) continue; // obstacle
-                float time = state.time + motion.time;
-                float beginTime = state.interval.begin + motion.time;
-                float endTime = state.interval.end + motion.time;
-                Interval interval = new Interval(beginTime, endTime);
-                // if (isCollisionOccur(interval, r, c))
-                // {
-                //     state.collisionCount++;
-                //     if (!ignoreCollision) continue;
-                // }
+                int nr = (int)position.x, nc = (int)position.z;
+                if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue; // out of map
+                int i = 0;
+                for (int ni = 0; ni < safeIntervals[nr][nc].Count; ni++)
+                {
+                    // GeneralClass.Log("\t" + safeIntervals[nr][nc][ni]);
+                    // compare with least entTime
+                    if (safeIntervals[nr][nc][ni].end < state.interval.end + motion.time) continue;
+                    float beginTime = Mathf.Max(state.interval.begin + motion.time, safeIntervals[nr][nc][ni].begin);
+                    float endTime = beginTime + motion.time;
 
-                State success = new State(position, interval, time);
-                success.motion = motion;
-                success.prev = state;
-                successors.Add(success);
+                    // collision check on next position
+                    if (safeIntervals[nr][nc][ni].end < endTime) continue;
+
+                    Interval interval = new Interval(beginTime, endTime);
+                    // GeneralClass.Log("\t\t" + interval);
+                    i = LowerboundIndex<Interval>(safeIntervals[r][c], interval, i);
+                    // conllistion check on current position
+                    if (i < safeIntervals[r][c].Count
+                       && (safeIntervals[r][c][i].begin > interval.begin
+                       || safeIntervals[r][c][i].end < interval.end)) continue;
+                    // GeneralClass.Log("\tSuccess");
+
+                    State success = new State(position, interval, beginTime);
+                    success.motion = motion;
+                    success.prev = state;
+                    successors.Add(success);
+                }
             }
             return successors;
         }

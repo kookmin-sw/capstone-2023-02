@@ -24,7 +24,8 @@ namespace SIPP
 
         public int CompareTo(Interval interval)
         {
-            return Comparer<float>.Default.Compare(begin, interval.begin);
+            Debug.Log("Compare " + end + " and " + interval.end + ":" + Comparer<float>.Default.Compare(begin, interval.begin));
+            return Comparer<float>.Default.Compare(end, interval.end);
         }
 
         public override string ToString()
