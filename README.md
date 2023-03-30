@@ -10,7 +10,15 @@
 
 프로젝트 소개하는 영상을 추가하세요
 
-[sipp ver 0.1.0](Assets/1686/Videos/sipp%20ver%200.1.0%202%20robots.mov)
+#### 2.1 Multi Agent Path Planning
+
+| SIPP | SIPP with Interval Axis |
+| --- | --- |
+| ![SIPP](./Assets/1686/Videos/SIPP.gif) | ![SIPP Advanced](./Assets/1686/Videos/SIPP%20with%20Interval%20Axis%203x4.gif) |
+
+#### 2.2 건물 모습
+
+![미래관](./Assets/1686/Videos/MiraeGwan.png)
 
 ### 3. 팀 소개
 
