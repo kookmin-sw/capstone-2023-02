@@ -16,6 +16,11 @@
 | --- | --- |
 | ![SIPP](./Assets/1686/Videos/SIPP.gif) | ![SIPP Advanced](./Assets/1686/Videos/SIPP%20with%20Interval%20Axis%203x4.gif) |
 
+
+로봇
+
+![로봇](./Assets/1617/robot.gif)
+
 #### 2.2 건물 모습
 
 ![미래관](./Assets/1686/Videos/MiraeGwan.png)
