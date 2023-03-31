@@ -130,6 +130,8 @@ namespace SIPP
                     GeneralClass.Log("\t[" + (i + 1) + "]: " + safeIntervals[(int)track.position.x][(int)track.position.z][i],
                                      GeneralClass.debugLevel.low);
                 reversedMotion.Push(track);
+
+                track.prev.interval.end = track.interval.begin;
                 track = track.prev;
             }
             while (reversedMotion.Count > 0) robot.stateToPath.Enqueue(reversedMotion.Pop());
@@ -190,7 +192,7 @@ namespace SIPP
                     i = LowerboundIndex<Interval>(safeIntervals[r][c], interval, i);
                     // conllistion check on current position
                     if (i < safeIntervals[r][c].Count
-                       && (safeIntervals[r][c][i].begin > interval.begin
+                       && (safeIntervals[r][c][i].begin > state.interval.begin
                        || safeIntervals[r][c][i].end < interval.end)) continue;
                     // GeneralClass.Log("\tSuccess");
 

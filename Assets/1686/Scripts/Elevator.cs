@@ -18,15 +18,15 @@ public class Elevator : MonoBehaviour
         inner.duration = doorDuration;
         foreach (Door d in floorOuter)
             d.duration = doorDuration;
+
+        Open();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(currentFloor == destiationFloor) return;
+        if (currentFloor == destiationFloor) return;
     }
-
-
 
     public void Open()
     {

@@ -12,8 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2216eacaa46e6df4ca7f8832f2acfe24, type: 3}
   m_Name: Map Data 3 x 4
   m_EditorClassIdentifier: 
-  dimension: {x: 0, y: 0}
-  obstacles: []
-  starts: []
-  directions: 
-  goals: []
+  dimension: {x: 4, y: 3}
+  obstacles:
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: 1, y: 2}
+  - {x: 2, y: 2}
+  starts:
+  - {x: 0, y: 0}
+  - {x: 3, y: 0}
+  directions: 0000000000000000
+  goals:
+  - {x: 3, y: 0}
+  - {x: 0, y: 0}
