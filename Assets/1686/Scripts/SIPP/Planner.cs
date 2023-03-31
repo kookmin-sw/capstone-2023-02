@@ -131,7 +131,7 @@ namespace SIPP
                                      GeneralClass.debugLevel.low);
                 reversedMotion.Push(track);
 
-                track.prev.interval.end = track.interval.begin;
+                if (track.prev != null) track.prev.interval.end = track.interval.begin;
                 track = track.prev;
             }
             while (reversedMotion.Count > 0) robot.stateToPath.Enqueue(reversedMotion.Pop());
