@@ -595,16 +595,8 @@ public class CBS : MonoBehaviour
         }
         queue.Add(root);
 
-        int MAXXX = 10000;
-
         while (queue.Count != 0)
         {
-            MAXXX--;
-            if (MAXXX < 0)
-            {
-                Debug.Log("Time out");
-                break;
-            }
             int minCost = int.MaxValue;
             int minNodeIndex = -1;
             for (int i = 0; i < queue.Count; i++)
