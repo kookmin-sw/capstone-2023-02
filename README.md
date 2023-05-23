@@ -32,7 +32,8 @@
 
 ### 뼈대 건물
 
-<img src = "./Assets/1617/Images/10.png">
+![SIPP](./Assets/1617/Images/1.png)
+<img src = "">
 
 ## 3. 팀 소개
 
