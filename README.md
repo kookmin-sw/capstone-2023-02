@@ -24,13 +24,11 @@
 | --- | --- |
 | ![SIPP](./Assets/1686/Videos/SIPP.gif) | ![SIPP Advanced](./Assets/1686/Videos/SIPP%20with%20Interval%20Axis%203x4.gif) |
 
-### 서비스 로봇
+### 로봇
 
-[<img src = "./Assets/1617/Images/6.png">](https://youtu.be/PNdhJjClKcY)
-
-### 로봇 엘리베이터
-
-[<img src = "./Assets/1617/Images/7.png">](https://youtu.be/Bud2Jc5ON6M)
+| 서비스 로봇 | 로봇 엘리베이터 |
+| --- | --- |
+| [<img src = "./Assets/1617/Images/6.png">](https://youtu.be/PNdhJjClKcY) | [<img src = "./Assets/1617/Images/7.png">](https://youtu.be/Bud2Jc5ON6M) |
 
 ### 뼈대 건물
 
