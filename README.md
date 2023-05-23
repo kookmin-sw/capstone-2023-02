@@ -34,7 +34,7 @@
 
 ### 뼈대 건물
 
-<img src = "./Assets/1617/Images/5.png">
+<img src = "./Assets/1617/Images/10.png">
 
 ## 3. 팀 소개
 
